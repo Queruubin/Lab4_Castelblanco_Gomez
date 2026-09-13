@@ -125,3 +125,29 @@ src/main/resources/
 
 ## Licencia
 Proyecto educativo con fines académicos – Escuela Colombiana de Ingeniería Julio Garavito.
+
+---
+
+## Respuestas
+
+### Migración del laboratorio P1
+Se migró toda la funcionalidad del laboratorio anterior al paquete `co.edu.eci.blueprints`: el modelo (`Blueprint`, `Point`), los DTOs (`ApiResponse`, `NewBlueprintRequest`), los filtros (identity, redundancy, undersampling por perfiles de Spring), la capa de persistencia (in-memory por defecto y PostgreSQL con JDBC/JSONB bajo el perfil `postgres`, con `docker-compose.yml` y `schema.sql`), el servicio `BlueprintsServices`, el controlador REST `api/BlueprintsAPIController` (`/api/v1/blueprints`) con su manejo global de errores y la documentación Swagger/OpenAPI. El controlador de demostración `BlueprintController` se reemplazó por el controlador real del P1.
+
+### Actividad 1 — Endpoints públicos y protegidos en `SecurityConfig`
+En `SecurityConfig.filterChain` se definen las reglas con `authorizeHttpRequests`:
+- **Públicos** (`permitAll`): `/auth/login`, `/actuator/health` y la documentación (`/v3/api-docs/**`, `/swagger-ui/**`, `/swagger-ui.html`).
+- **Protegidos**: todo `/api/**` exige un JWT válido con alguno de los scopes `blueprints.read` o `blueprints.write` (`hasAnyAuthority("SCOPE_...")`), y cualquier otra ruta cae en `anyRequest().authenticated()`. La validación del token la hace el `oauth2ResourceServer` con el `JwtDecoder` basado en la llave pública RSA.
+
+### Actividad 2 — Flujo de login y claims del JWT
+`POST /auth/login` valida las credenciales contra `InMemoryUserService` (BCrypt). Si son válidas, `AuthController` construye un `JwtClaimsSet` y lo firma con RS256 usando la llave privada generada por `JwtKeyProvider`. Las claims del token emitido son:
+- `iss`: `https://decsis-eci/blueprints` (configurado en `application.yml`).
+- `sub`: el username autenticado (p. ej. `student`).
+- `iat` / `exp`: emisión y expiración (TTL de 3600 s, `blueprints.security.token-ttl-seconds`).
+- `scope`: `blueprints.read blueprints.write`, que Spring convierte en las authorities `SCOPE_blueprints.read` y `SCOPE_blueprints.write`.
+
+### Actividad 3 — Scopes extendidos a los endpoints del P1
+Los endpoints migrados del P1 quedaron protegidos con `@PreAuthorize` (habilitado por `MethodSecurityConfig`):
+- Lecturas con `SCOPE_blueprints.read`: `GET /api/v1/blueprints`, `GET /api/v1/blueprints/{author}` y `GET /api/v1/blueprints/{author}/{bpname}`.
+- Escrituras con `SCOPE_blueprints.write`: `POST /api/v1/blueprints` y `PUT /api/v1/blueprints/{author}/{bpname}/points`.
+
+Con esto, un token que solo tenga el scope de lectura puede consultar planos pero recibe `403 Forbidden` al intentar crear o modificar.

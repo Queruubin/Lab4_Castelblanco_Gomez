@@ -13,9 +13,9 @@ public class OpenApiConfig {
     @Bean
     public OpenAPI api() {
         return new OpenAPI()
-          .info(new Info().title("BluePrints API")
+          .info(new Info().title("ARSW BluePrints API")
             .version("2.0")
-            .description("Parte 2 — Seguridad con JWT (OAuth 2.0)"))
+            .description("Blueprints Laboratory (Java 21 / Spring Boot 3.3.x) — Parte 2: Seguridad con JWT (OAuth 2.0)"))
           .addSecurityItem(new SecurityRequirement().addList("bearer-jwt"))
           .components(new Components().addSecuritySchemes("bearer-jwt",
             new SecurityScheme()

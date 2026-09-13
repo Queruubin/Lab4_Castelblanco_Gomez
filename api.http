@@ -7,6 +7,35 @@ Content-Type: application/json
   "password": "student123"
 }
 
-### Listar blueprints (usar token)
-GET http://localhost:8080/api/blueprints
+### Listar todos los blueprints (scope blueprints.read)
+GET http://localhost:8080/api/v1/blueprints
 Authorization: Bearer {{access_token}}
+
+### Blueprints por autor (scope blueprints.read)
+GET http://localhost:8080/api/v1/blueprints/john
+Authorization: Bearer {{access_token}}
+
+### Blueprint por autor y nombre (scope blueprints.read)
+GET http://localhost:8080/api/v1/blueprints/john/house
+Authorization: Bearer {{access_token}}
+
+### Crear blueprint (scope blueprints.write)
+POST http://localhost:8080/api/v1/blueprints
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "author": "samuel",
+  "name": "office",
+  "points": [{"x": 1, "y": 1}, {"x": 2, "y": 2}]
+}
+
+### Agregar punto a un blueprint (scope blueprints.write)
+PUT http://localhost:8080/api/v1/blueprints/samuel/office/points
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "x": 5,
+  "y": 7
+}
