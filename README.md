@@ -157,3 +157,71 @@ Los endpoints migrados del P1 quedaron protegidos con `@PreAuthorize` (habilitad
 - Escrituras con `SCOPE_blueprints.write`: `POST /api/v1/blueprints` y `PUT /api/v1/blueprints/{author}/{bpname}/points`.
 
 Con esto, un token que solo tenga el scope de lectura puede consultar planos pero recibe `403 Forbidden` al intentar crear o modificar.
+
+### Actividad 4 - Tiempo de expiración de tokens
+
+Primero se entró al `application.yml`, el cual tiene en la sección de blueprints la siguiente línea de código: 
+    token-ttl-seconds: 20
+
+esta se cambió por 20, que indica que el time-to-live del token pasó de ser de una hora a 2' segundos. 
+
+Después se entró a Swagger y con las credenciales establecidas en el laboratorio nos autenticamos: 
+
+![Swagger auth example](/src/docs/img/auth-controller.png)
+
+Este nos regresó la respuesta 200 junto con un token de verificación. 
+
+![Initial GET response](/src/docs/img/initial-get.png)
+
+Para confirmar que el tiempo del token es correcto, este token luego fue copiado y pegado en la página [jwt.io](https://www.jwt.io/), la cual procesó el token otorgado, y en la sección de JWT Encoder pudimos confirmar que efectivamente el tiempo de vida del token es de 20 segundos. 
+
+![jwt.io answer](/src/docs/img/jwt-io.png)
+
+**Nota**: se debe restar el valor de exp con el iat. En este caso, la diferencia es de 20. 
+
+Ahora bien, para observar el efecto que tiene el cambio del ttl del token, se utilizó el mismo token que se obtuvo del ejercicio anterior: este se pegó en el espacio indicado después de darle click al botón Authorize en Swagger. Este luego mostró el candado verde cerrado, lo que indica que sí funcionó ese proceso de autenticación. 
+
+Después de esto, se ejecutó el GET /api/v1/blueprints, en donde obtenemos la siguiente respuesta: 
+
+![answer before 20 seconds](/src/docs/img/answer-before-20.png)
+
+Todo esto se realizó apenas nos autenticacmos con el access token en Swagger, antes de los 20 segundos. 
+
+Pasados los 20 segundos, se volvió a ejecutar el GET /api/v1/blueprints, el cual nos devolvió el siguiente resultado:
+
+![answer after 20 seconds](/src/docs/img/answer-after-20.png)
+
+Acá es posible observar que la razón de por qué ya no es válido el token access es porque expiró, como se indica en las siguientes líneas:
+
+```
+error_description="An error occurred while attempting to decode the Jwt: Jwt expired at 2026-09-17T00:04:00Z"
+```
+
+Para volver a los parámetros originales del tll, se volvió a cambiar el valor del tll del token en el `application.yml` a 3600. 
+
+
+### Actividad 5 - Documentación de Swagger con endpoints de autenticación y negocio 
+
+Para complementar la documentación de Swagger con los elementos de autenticación y negocio, se trabajaron con las clases de `BlueprintsAPIController.java` y `AuthController.java`. 
+
+Actualmente, la clase `BlueprintsAPIController.java` ya cuenta con su documentación completa, incluidos los `@Tag`, `@Operation`, `@ApiResponses` y `@SecurityRequirement` en cada endpoint. 
+
+Ahora bien, en el `AuthController.java` se agregaron algunas líneas de código con sus imports y sus anotaciones. 
+
+Se usó @Tag para agrupar los endpoints entre "Autenticación" y "Blueprints", junto con su scope y códigos de respuesta correspondientes. 
+
+Acá se cambió el endpoint /auth/login para que fuera un endpoint público (se le quitó el candado global de bearer-jwt), pues la idea es que los usuarios puedan hacer login sin necesidad de un access token; no tiene sentido autenticarse antes de loguearse. 
+
+Después de realizar esa modifcación en el código, se ven los siguientes cambios.
+
+Antes del cambio en el controlador de autenticación: 
+
+![before-change-lock](/src/docs/img/auth-login-with-lock.png)
+
+Después del cambio en el controlador de autenticación: 
+
+![after-change-lock](/src/docs/img/auth-login.without-lock.png)
+
+Acá se evidencia como el endpoint /auth/login ahora es público, a diferencia de los demás endpoints que sí muestran un candado al lado. 
+
+---

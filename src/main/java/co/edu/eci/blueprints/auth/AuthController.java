@@ -5,10 +5,15 @@ import co.edu.eci.blueprints.security.RsaKeyProperties;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.jwt.*;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.time.Instant;
 import java.util.Map;
 
+@Tag(name = "Autenticación", description = "Endpoint público para emitir JWT (OAuth2)")    
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
@@ -26,6 +31,16 @@ public class AuthController {
     public record LoginRequest(String username, String password) {}
     public record TokenResponse(String access_token, String token_type, long expires_in) {}
 
+    @Operation(
+        summary = "Autenticar usuario y emitir JWT",
+        description = "Valida username/password contra InMemoryUserService y, si son correctos, "
+            + "retorna un access_token firmado con RS256, junto con su tipo y tiempo de vida (TTL)."
+    )
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Login exitoso, token emitido"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Credenciales inválidas")
+    })
+    @SecurityRequirements // endpoint SIN el candado global de bearer-jwt, porque es público
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest req) {
         if (!userService.isValid(req.username(), req.password())) {
